@@ -44,8 +44,6 @@ var snowButton = new blynk.VirtualPin(6);
 var lightningButton = new blynk.VirtualPin(7);
 var rainbowButton = new blynk.VirtualPin(8);
 
-getWeather();
-
 weatherButton.on('write', function(param) {
     if (param[0] == 1)
     {
