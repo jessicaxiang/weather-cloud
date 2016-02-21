@@ -14,12 +14,10 @@ signal.dir(mraa.DIR_OUT);
 
 //Set up http for weather api
 var http = require('http');
-// city name
-var city = "Detroit";
 // API Key
 var apiKey = "256bd905eee36f110f18f9598c25b2ad";
 
-//get current time
+//get current hour between 0 and 23
 var hour = new Date().getHours();
 //convert from UTC to EST
 hour = hour - 5;
@@ -31,7 +29,6 @@ if (hour < 0)
 //Set up blynk
 var Blynk = require('blynk-library');
 //authorization code for blynk
-//var AUTH = 'f3967b2a26ed48ba94ff8f4bcf2d3ad6';
 var AUTH = "5ff3e21dc43e48e28d1ac68f6453bba7";
 var blynk = new Blynk.Blynk(AUTH, options = {
   connector : new Blynk.TcpClient()
@@ -46,6 +43,8 @@ var goldenButton = new blynk.VirtualPin(5);
 var snowButton = new blynk.VirtualPin(6);
 var lightningButton = new blynk.VirtualPin(7);
 var rainbowButton = new blynk.VirtualPin(8);
+
+getWeather();
 
 weatherButton.on('write', function(param) {
     if (param[0] == 1)
@@ -103,67 +102,90 @@ rainbowButton.on('write', function(param) {
     }
 });
 
+
 function getWeather() {
-    var url = "http://api.openweathermap.org/data/2.5/weather?q=" + city + "?id=524901&APPID=" + apiKey; 
     
-    try {
-    
-    // build the http request
-    http.get(url, function(res) {
+    http.get("http://ipinfo.io", function(response) 
+     { 
         var body = '';
 
         // read the response of the query
-        res.on('data', function(chunk) {
+        response.on('data', function(chunk) {
         body += chunk;
         });
 
-        res.on('end', function() {
+        response.on('end', function() {
         // now parse the json feed
-        var weather = JSON.parse(body)
+        var location = JSON.parse(body);
 
-        // get the current weather condition
-        var condition = weather.weather[0].main;
-        
-        if (hour < 7 || hour > 19)
-        {
-            night();
-        }
-        else if (condition == "Thunderstorm" || condition == "Rain" || condition == "Extreme")
-        {
-            lightning();
-        }
-        else if (condition == "Drizzle" || condition == "Atmosphere" || condition == "Clouds")
-        {
-            overcast();
-        }
-        else if (condition == "Snow")
-        {
-            snow();
-        }
-        else if (condition == "Clear")
-        {
-            golden();
-        }
-        else
-        {
-            blueSky();
+        // get location
+        var city = location.city;
+            
+        var url = "http://api.openweathermap.org/data/2.5/weather?q=" + city + "?id=524901&APPID=" + apiKey; 
+    
+        try {
+
+        // build the http request
+        http.get(url, function(res) {
+
+            var body = '';
+
+            // read the response of the query
+            res.on('data', function(chunk) {
+            body += chunk;
+            });
+
+            res.on('end', function() {
+            // now parse the json feed
+            var weather = JSON.parse(body)
+
+            // get the current weather condition
+            var condition = weather.weather[0].main;
+
+            if (hour < 7 || hour > 19) //nighttime
+            {
+                night();
+            }
+            else if (condition == "Thunderstorm" || condition == "Rain" || condition == "Extreme")
+            {
+                lightning();
+            }
+            else if (condition == "Drizzle" || condition == "Atmosphere" || condition == "Clouds")
+            {
+                overcast();
+            }
+            else if (condition == "Snow")
+            {
+                snow();
+            }
+            else if (condition == "Clear")
+            {
+                golden();
+            }
+            else
+            {
+                blueSky();
+            }
+
+            });
+
+        }).on('error', function(e) {
+
+            // check for errors and eventually show a message
+            console.log("Error");
+
+        });
+
+        } catch(e) {
+
+            // check for errors and eventually show a message
+            console.log("Error");
+
         }
             
         });
-    
-    }).on('error', function(e) {
-        
-        // check for errors and eventually show a message
-        console.log("Error");
-
-    });
-        
-    } catch(e) {
-        
-        // check for errors and eventually show a message
-        console.log("Error");
-
-    }
+            
+     }, "jsonp");
     
 };
 
